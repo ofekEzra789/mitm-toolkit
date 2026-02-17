@@ -119,3 +119,46 @@ func StartARPSpoofing(
 	}
 
 }
+
+// Restoring the ARP table
+func RestoreARP(
+	localNetwork networkInterface,
+	targetIP string, targetMAC string,
+	gatewayIP string, gatewayMAC string,
+) error {
+
+	realGateway := networkInterface{macAddress: gatewayMAC}
+	realTarget := networkInterface{macAddress: targetMAC}
+
+	// Open the network interface
+	handle, err := pcap.OpenLive(
+		localNetwork.interfaceName,
+		1600,
+		true,
+		5*time.Second,
+	)
+
+	if err != nil {
+		return fmt.Errorf("Faild to open interface: %v", err)
+	}
+
+	defer handle.Close()
+
+	for i := 0; i < 3; i++ {
+
+		// Send TO: victim (targetIP, targetMAC)
+		// Claiming to be: gateway (gatewayIP)
+		// Sending from: real gateway MAC (realGateway)
+		// Message: "Hey victim, gateway IP = real gateway MAC"
+
+		SendARPSpoof(handle, targetIP, targetMAC, gatewayIP, realGateway)
+
+		// Send TO: gateway (gatewayIP, gatewayMAC)
+		// Claiming to be: victim (targetIP)
+		// Sending from: real target MAC (realTarget)
+		// Message: "Hey gateway, victim IP = real victim MAC"
+		SendARPSpoof(handle, gatewayIP, gatewayMAC, targetIP, realTarget)
+	}
+
+	return nil
+}
