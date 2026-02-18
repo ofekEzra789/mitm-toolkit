@@ -150,7 +150,6 @@ func RestoreARP(
 		// Claiming to be: gateway (gatewayIP)
 		// Sending from: real gateway MAC (realGateway)
 		// Message: "Hey victim, gateway IP = real gateway MAC"
-
 		SendARPSpoof(handle, targetIP, targetMAC, gatewayIP, realGateway)
 
 		// Send TO: gateway (gatewayIP, gatewayMAC)
