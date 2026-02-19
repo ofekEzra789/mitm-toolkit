@@ -36,6 +36,7 @@ func StartCapture(networkInterface networkInterface, targetIP string) error {
 
 	// Creating map (key is string and value is bool)
 	seenQueries := make(map[string]bool)
+	seenHTTP := make(map[string]bool)
 
 	for packet := range packetSource.Packets() {
 
@@ -50,8 +51,13 @@ func StartCapture(networkInterface networkInterface, targetIP string) error {
 
 				payload := string(tcp.Payload)
 				if len(payload) > 0 {
-					// Print to screen
-					fmt.Printf("[HTTP] %v\n", payload)
+
+					// Print only if not seen
+					if !seenHTTP[payload] {
+						parseHTTP(payload)
+						seenHTTP[payload] = true
+					}
+
 				}
 			}
 
