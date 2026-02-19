@@ -1,9 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"strings"
 	"time"
+
+	"github.com/fatih/color"
 )
 
 // Extract from the header: method + URL
@@ -31,7 +32,7 @@ func parseHTTP(payload string) {
 			if len(parts) >= 3 {
 				statusText = parts[2] // "The OK"
 			}
-			fmt.Printf("[%v] [HTTP Response] %v %v\n", time.Now().Format("15:04:05"), statusCode, statusText)
+			color.Yellow("%-10s  %-16s %s %s\n", time.Now().Format("15:04:05"), "HTTP Response", statusCode, statusText)
 		}
 
 	} else {
@@ -53,9 +54,9 @@ func parseHTTP(payload string) {
 			}
 
 			if host != "" {
-				fmt.Printf("[%v] [HTTP Request] %v http://%v%v\n", time.Now().Format("15:04:05"), method, host, path)
+				color.Green("%-10s  %-16s %s http://%v%v\n", time.Now().Format("15:04:05"), "HTTP Request", method, host, path)
 			} else {
-				fmt.Printf("[%v] [HTTP Request] %v %v\n", time.Now().Format("15:04:05"), method, path)
+				color.Green("%-10s  %-16s %s %s\n", time.Now().Format("15:04:05"), "HTTP Request", method, path)
 			}
 
 		}

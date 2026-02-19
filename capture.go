@@ -6,6 +6,7 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
+	"github.com/fatih/color"
 )
 
 func StartCapture(networkInterface networkInterface, targetIP string) error {
@@ -19,7 +20,7 @@ func StartCapture(networkInterface networkInterface, targetIP string) error {
 	)
 
 	if err != nil {
-		return fmt.Errorf("Faild to open interface: %v", err)
+		return fmt.Errorf("Failed to open interface: %v", err)
 	}
 
 	defer handle.Close()
@@ -36,7 +37,6 @@ func StartCapture(networkInterface networkInterface, targetIP string) error {
 
 	// Creating map (key is string and value is bool)
 	seenQueries := make(map[string]bool)
-	seenHTTP := make(map[string]bool)
 
 	for packet := range packetSource.Packets() {
 
@@ -51,13 +51,7 @@ func StartCapture(networkInterface networkInterface, targetIP string) error {
 
 				payload := string(tcp.Payload)
 				if len(payload) > 0 {
-
-					// Print only if not seen
-					if !seenHTTP[payload] {
-						parseHTTP(payload)
-						seenHTTP[payload] = true
-					}
-
+					parseHTTP(payload)
 				}
 			}
 
@@ -73,7 +67,7 @@ func StartCapture(networkInterface networkInterface, targetIP string) error {
 
 				// Print only if not seen
 				if !seenQueries[query] {
-					fmt.Printf("[%v] [DNS] Query: %v\n", time.Now().Format("15:04:05"), string(question.Name))
+					color.Cyan("%-10s  %-16s %s\n", time.Now().Format("15:04:05"), "DNS", string(question.Name))
 					seenQueries[query] = true
 				}
 
