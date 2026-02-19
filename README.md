@@ -1,20 +1,21 @@
 # MITM ARP Spoofing Tool
 
-A Man-in-the-Middle tool written in Go for educational purposes. Performs ARP cache poisoning to intercept network traffic between a target and its gateway.
+A Man-in-the-Middle tool written in Go for educational purposes. Performs ARP cache poisoning to intercept and monitor network traffic between a target and its gateway.
 
-## How it works
+## Features
 
-1. Discovers the local network interface and gateway
-2. Resolves MAC addresses via ARP requests
-3. Poisons the ARP cache of both the target and the gateway
-4. Enables IP forwarding so the victim stays connected
-5. Restores ARP tables on exit (Ctrl+C)
+- ARP cache poisoning (bidirectional)
+- Real-time HTTP traffic monitoring (requests & responses)
+- DNS query logging
+- Automatic ARP table restoration on exit
 
 ## Usage
 
 ```bash
 sudo ./mitm -t <target_ip>
 ```
+
+Press `Ctrl+C` to stop and restore ARP tables.
 
 ## Requirements
 
@@ -29,6 +30,8 @@ sudo ./mitm -t <target_ip>
 | `main.go` | Entry point, orchestration |
 | `network.go` | Interface discovery, ARP resolution |
 | `attack.go` | ARP spoofing, IP forwarding, cleanup |
+| `capture.go` | Packet capture, HTTP/DNS monitoring |
+| `utils.go` | HTTP parsing helpers |
 
 ## Build
 
