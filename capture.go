@@ -34,6 +34,9 @@ func StartCapture(networkInterface networkInterface, targetIP string) error {
 
 	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
 
+	// Creating map (key is string and value is bool)
+	seenQueries := make(map[string]bool)
+
 	for packet := range packetSource.Packets() {
 
 		// Check HTTP layer
@@ -60,7 +63,14 @@ func StartCapture(networkInterface networkInterface, targetIP string) error {
 
 			dns := dnsLayer.(*layers.DNS)
 			for _, question := range dns.Questions {
-				fmt.Printf("[DNS] Query: %v\n", string(question.Name))
+				query := string(question.Name)
+
+				// Print only if not seen
+				if !seenQueries[query] {
+					fmt.Printf("[DNS] Query: %v\n", string(question.Name))
+					seenQueries[query] = true
+				}
+
 			}
 
 		}

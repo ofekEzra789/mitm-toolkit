@@ -68,6 +68,7 @@ func main() {
 	}
 
 	go StartARPSpoofing(localNetwork, targetIP, targetMAC, gatewayIP, gatewayMAC)
+	go StartCapture(localNetwork, targetIP)
 
 	// Block until ctrl+c signal to exit
 	sigChan := make(chan os.Signal, 1)
