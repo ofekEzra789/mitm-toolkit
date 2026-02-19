@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strings"
+	"time"
 )
 
 // Extract from the header: method + URL
@@ -30,7 +31,7 @@ func parseHTTP(payload string) {
 			if len(parts) >= 3 {
 				statusText = parts[2] // "The OK"
 			}
-			fmt.Printf("[HTTP Response] %v %v\n", statusCode, statusText)
+			fmt.Printf("[%v] [HTTP Response] %v %v\n", time.Now().Format("15:04:05"), statusCode, statusText)
 		}
 
 	} else {
@@ -52,9 +53,9 @@ func parseHTTP(payload string) {
 			}
 
 			if host != "" {
-				fmt.Printf("[HTTP Request] %v http://%v%v\n", method, host, path)
+				fmt.Printf("[%v] [HTTP Request] %v http://%v%v\n", time.Now().Format("15:04:05"), method, host, path)
 			} else {
-				fmt.Printf("[HTTP Request] %v %v\n", method, path)
+				fmt.Printf("[%v] [HTTP Request] %v %v\n", time.Now().Format("15:04:05"), method, path)
 			}
 
 		}

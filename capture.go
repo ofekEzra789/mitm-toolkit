@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-
+	"time"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
@@ -73,7 +73,7 @@ func StartCapture(networkInterface networkInterface, targetIP string) error {
 
 				// Print only if not seen
 				if !seenQueries[query] {
-					fmt.Printf("[DNS] Query: %v\n", string(question.Name))
+					fmt.Printf("[%v] [DNS] Query: %v\n", time.Now().Format("15:04:05"), string(question.Name))
 					seenQueries[query] = true
 				}
 
