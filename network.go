@@ -164,6 +164,8 @@ func GetMACFromIP(targetIP string, localInterface networkInterface) (string, err
 		return "", fmt.Errorf("failed to set BPF filter: %v", err)
 	}
 
+	fmt.Printf("Resolving MAC address for %v...\n", targetIP)
+
 	// Send the ARP Request
 	err = handle.WritePacketData(buf.Bytes())
 	if err != nil {
