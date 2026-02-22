@@ -59,6 +59,15 @@ func parseHTTP(payload string) {
 				color.Green("%-10s  %-16s %s %s\n", time.Now().Format("15:04:05"), "HTTP Request", method, path)
 			}
 
+			if method == "POST" || method == "PUT" || method == "PATCH" {
+				if idx := strings.Index(payload, "\r\n\r\n"); idx != -1 {
+					body := strings.TrimSpace(payload[idx+4:])
+					if body != "" {
+						color.Magenta("%-10s  %-16s %s\n", time.Now().Format("15:04:05"), "POST Body", body)
+					}
+				}
+			}
+
 		}
 
 	}

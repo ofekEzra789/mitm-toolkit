@@ -178,7 +178,10 @@ func GetMACFromIP(targetIP string, localInterface networkInterface) (string, err
 	for packet := range packetSource.Packets() {
 		arpLayer := packet.Layer(layers.LayerTypeARP)
 		if arpLayer != nil {
-			arp := arpLayer.(*layers.ARP)
+			arp, ok := arpLayer.(*layers.ARP)
+			if !ok {
+				continue
+			}
 
 			// Check if this is an ARP reply
 			if arp.Operation == layers.ARPReply {
