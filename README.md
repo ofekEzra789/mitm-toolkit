@@ -1,21 +1,31 @@
-# MITM ARP Spoofing Tool
+# MITM Toolkit
 
-A Man-in-the-Middle tool written in Go for educational purposes. Performs ARP cache poisoning to intercept and monitor network traffic between a target and its gateway.
+A Man-in-the-Middle toolkit written in Go for educational purposes. Supports multiple attack modes including ARP cache poisoning and DHCP rogue server.
 
 ## Features
 
-- ARP cache poisoning (bidirectional)
+- **ARP Spoofing** - Bidirectional ARP cache poisoning to intercept traffic
+- **DHCP Rogue Server** - Responds to DHCP Discover/Request with crafted Offer/ACK, sets attacker as default gateway
 - Real-time HTTP traffic monitoring (requests & responses)
 - DNS query logging
 - Automatic ARP table restoration on exit
+- IP forwarding management
 
 ## Usage
 
+### ARP Spoofing
+
 ```bash
-sudo ./mitm -t <target_ip>
+sudo ./mitm -mode arp -t <target_ip>
 ```
 
-Press `Ctrl+C` to stop and restore ARP tables.
+### DHCP Rogue Server
+
+```bash
+sudo ./mitm -mode dhcp -offer <ip_to_offer>
+```
+
+Press `Ctrl+C` to stop.
 
 ## Requirements
 
@@ -25,13 +35,14 @@ Press `Ctrl+C` to stop and restore ARP tables.
 
 ## Project Structure
 
-| File | Purpose |
-|------|---------|
-| `main.go` | Entry point, orchestration |
-| `network.go` | Interface discovery, ARP resolution |
-| `attack.go` | ARP spoofing, IP forwarding, cleanup |
-| `capture.go` | Packet capture, HTTP/DNS monitoring |
-| `utils.go` | HTTP parsing helpers |
+| Package | File | Purpose |
+|---------|------|---------|
+| `/` | `main.go` | Entry point, CLI flag parsing, mode selection |
+| `network/` | `network.go` | Interface discovery, gateway detection, ARP resolution |
+| `arp/` | `arp.go` | ARP spoofing, IP forwarding, ARP table restoration |
+| `dhcp/` | `dhcp.go` | DHCP rogue server (listen, craft Offer/ACK packets) |
+| `capture/` | `capture.go` | Packet capture, DNS monitoring |
+| `capture/` | `http.go` | HTTP request/response parsing |
 
 ## Build
 
