@@ -148,6 +148,11 @@ func sendDHCPResponse(handle *pcap.Handle, iface network.NetworkInterface, dhcp 
 				Data:   srcIP.To4(),
 				Length: 4,
 			},
+			layers.DHCPOption{
+				Type: layers.DHCPOptDNS,
+				Data: net.ParseIP("8.8.8.8").To4(),
+				Length: 4,
+			},
 		},
 	}
 
