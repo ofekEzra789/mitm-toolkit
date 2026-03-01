@@ -1,4 +1,4 @@
-package main
+package network
 
 import (
 	"fmt"
@@ -11,17 +11,17 @@ import (
 	"github.com/jackpal/gateway"
 )
 
-type networkInterface struct {
-	interfaceName string
-	ipv4Address   string
-	macAddress    string
+type NetworkInterface struct {
+	InterfaceName string
+	IPv4Address   string
+	MacAddress    string
 }
 
 // Step 1: Identify your network interface
-func GetLocalNetworkInfo() (networkInterface, error) {
+func GetLocalNetworkInfo() (NetworkInterface, error) {
 	interfaces, err := net.Interfaces()
 	if err != nil {
-		return networkInterface{}, fmt.Errorf("failed to get interfaces: %v", err)
+		return NetworkInterface{}, fmt.Errorf("failed to get interfaces: %v", err)
 	}
 
 	for _, iface := range interfaces {
@@ -66,14 +66,14 @@ func GetLocalNetworkInfo() (networkInterface, error) {
 		macAddr := iface.HardwareAddr.String()
 
 		// Return the network interface info
-		return networkInterface{
-			interfaceName: iface.Name,
-			ipv4Address:   ipv4,
-			macAddress:    macAddr,
+		return NetworkInterface{
+			InterfaceName: iface.Name,
+			IPv4Address:   ipv4,
+			MacAddress:    macAddr,
 		}, nil
 	}
 
-	return networkInterface{}, fmt.Errorf("no valid network interface found")
+	return NetworkInterface{}, fmt.Errorf("no valid network interface found")
 }
 
 // Step 2: Identify Network Gateway (Router IP)
@@ -92,11 +92,11 @@ func GetNetworkGateway() (string, error) {
 
 // IP source: .. , MAC source: ..
 // IP Dest: .. , MAC dest: ff:ff:ff:ff:ff:ff (brodcast)
-func GetMACFromIP(targetIP string, localInterface networkInterface) (string, error) {
+func GetMACFromIP(targetIP string, localInterface NetworkInterface) (string, error) {
 
 	// Open network interface for packet capture
 	handle, err := pcap.OpenLive(
-		localInterface.interfaceName,
+		localInterface.InterfaceName,
 		1600,
 		true,
 		5*time.Second,
@@ -114,10 +114,10 @@ func GetMACFromIP(targetIP string, localInterface networkInterface) (string, err
 	}
 
 	// Parse local IP address (attacker ip address)
-	srcIP := net.ParseIP(localInterface.ipv4Address)
+	srcIP := net.ParseIP(localInterface.IPv4Address)
 
 	// Parse MAC address (attacker MAC address)
-	srcMAC, err := net.ParseMAC(localInterface.macAddress)
+	srcMAC, err := net.ParseMAC(localInterface.MacAddress)
 	if err != nil {
 		return "", fmt.Errorf("Invalid source MAC: %v", err)
 	}

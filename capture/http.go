@@ -1,4 +1,4 @@
-package main
+package capture
 
 import (
 	"strings"
@@ -7,8 +7,8 @@ import (
 	"github.com/fatih/color"
 )
 
-// Extract from the header: method + URL
-func parseHTTP(payload string) {
+// ParseHTTP extracts from the header: method + URL
+func ParseHTTP(payload string) {
 
 	// Need to split the payload for lines
 	payloadLines := strings.Split(payload, "\n")

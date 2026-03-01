@@ -1,4 +1,4 @@
-package main
+package arp
 
 import (
 	"fmt"
@@ -6,15 +6,17 @@ import (
 	"os"
 	"time"
 
+	"mitm-toolkit/network"
+
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
 )
 
 // Sending Fake ARP reply - even when not asked
-func SendARPSpoof(handle *pcap.Handle, targetIP string, targetMAC string, spoofedIP string, attackerInterface networkInterface) error {
+func SendARPSpoof(handle *pcap.Handle, targetIP string, targetMAC string, spoofedIP string, attackerInterface network.NetworkInterface) error {
 
-	srcMAC, err := net.ParseMAC(attackerInterface.macAddress)
+	srcMAC, err := net.ParseMAC(attackerInterface.MacAddress)
 	if err != nil {
 		return fmt.Errorf("Invalid source MAC address: %v", err)
 	}
@@ -83,14 +85,14 @@ func EnableIPForwarding() error {
 // Starting the ARP spoofing
 // localNetwork => attacker
 func StartARPSpoofing(
-	localNetwork networkInterface,
+	localNetwork network.NetworkInterface,
 	targetIP string, targetMAC string,
 	gatewayIP string, gatewayMAC string,
 ) error {
 
 	// Open the network interface
 	handle, err := pcap.OpenLive(
-		localNetwork.interfaceName,
+		localNetwork.InterfaceName,
 		1600,
 		true,
 		pcap.BlockForever,
@@ -122,17 +124,17 @@ func StartARPSpoofing(
 
 // Restoring the ARP table
 func RestoreARP(
-	localNetwork networkInterface,
+	localNetwork network.NetworkInterface,
 	targetIP string, targetMAC string,
 	gatewayIP string, gatewayMAC string,
 ) error {
 
-	realGateway := networkInterface{macAddress: gatewayMAC}
-	realTarget := networkInterface{macAddress: targetMAC}
+	realGateway := network.NetworkInterface{MacAddress: gatewayMAC}
+	realTarget := network.NetworkInterface{MacAddress: targetMAC}
 
 	// Open the network interface
 	handle, err := pcap.OpenLive(
-		localNetwork.interfaceName,
+		localNetwork.InterfaceName,
 		1600,
 		true,
 		5*time.Second,

