@@ -146,6 +146,10 @@ func main() {
 			os.Exit(1)
 		}
 
+		fmt.Println("\nStarting DHCP Rogue attack...")
+		fmt.Println("Press Ctrl+C to stop.")
+		fmt.Println()
+
 		go dhcp.ListenDHCP(localNetwork, net.ParseIP(offeredIP))
 
 		// Block until ctrl+c signal to exit
