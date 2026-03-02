@@ -30,14 +30,21 @@ func main() {
 	var count int
 
 	flag.StringVar(&mode, "mode", "", "attack mode: arp or dhcp (required)")
-	flag.StringVar(&targetIP, "t", "", "target ip address (required)")
+	flag.StringVar(&targetIP, "t", "", "target ip address (required for arp)")
 	flag.StringVar(&offeredIP, "offer", "", "IP to offer target (required for dhcp)")
-	flag.IntVar(&count, "count", 0, "how DHCP Discover to send")
+	flag.IntVar(&count, "count", 0, "how many DHCP Discover to send")
 	flag.Parse()
 
 	if mode == "" {
 		fmt.Println("Error: Mode is required")
 		fmt.Println("Usage: mode <arp | dhcp>")
+		os.Exit(1)
+	}
+
+	// Get local network information
+	localNetwork, err := network.GetLocalNetworkInfo()
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -64,17 +71,7 @@ func main() {
 
 		fmt.Printf("Target IP address: %v\n", targetIP)
 
-		// Get local network information
-		localNetwork, err := network.GetLocalNetworkInfo()
-		if err != nil {
-			fmt.Printf("Error: %v\n", err)
-			os.Exit(1)
-		}
-
-		fmt.Printf("\nAttacker Information:\n")
-		fmt.Printf("  Interface: %s\n", localNetwork.InterfaceName)
-		fmt.Printf("  IP Address: %s\n", localNetwork.IPv4Address)
-		fmt.Printf("  MAC Address: %s\n", localNetwork.MacAddress)
+		printAttackerInfo(localNetwork)
 
 		// Get gateway information
 		gatewayIP, err := network.GetNetworkGateway()
@@ -132,17 +129,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		// Get local network information
-		localNetwork, err := network.GetLocalNetworkInfo()
-		if err != nil {
-			fmt.Printf("Error: %v\n", err)
-			os.Exit(1)
-		}
-
-		fmt.Printf("\nAttacker Information:\n")
-		fmt.Printf("  Interface: %s\n", localNetwork.InterfaceName)
-		fmt.Printf("  IP Address: %s\n", localNetwork.IPv4Address)
-		fmt.Printf("  MAC Address: %s\n", localNetwork.MacAddress)
+		printAttackerInfo(localNetwork)
 
 		// enable IP forwarding
 		if err := arp.EnableIPForwarding(); err != nil {
@@ -170,15 +157,10 @@ func main() {
 			os.Exit(1)
 		}
 
+		printAttackerInfo(localNetwork)
+
 		fmt.Println("Starting DHCP starvation attack")
 		fmt.Println()
-
-		// Get local network information
-		localNetwork, err := network.GetLocalNetworkInfo()
-		if err != nil {
-			fmt.Printf("Error: %v\n", err)
-			os.Exit(1)
-		}
 
 		dhcp.StartStarvation(localNetwork, count)
 
@@ -190,4 +172,12 @@ func main() {
 
 	}
 
+}
+
+// small helper to print attacker info
+func printAttackerInfo(localNetwork network.NetworkInterface) {
+	fmt.Printf("\nAttacker Information:\n")
+	fmt.Printf("  Interface: %s\n", localNetwork.InterfaceName)
+	fmt.Printf("  IP Address: %s\n", localNetwork.IPv4Address)
+	fmt.Printf("  MAC Address: %s\n", localNetwork.MacAddress)
 }
