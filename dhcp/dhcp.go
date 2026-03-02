@@ -172,7 +172,7 @@ func sendDHCPResponse(handle *pcap.Handle, iface network.NetworkInterface, dhcp 
 		ComputeChecksums: true,
 	}
 
-	// call all the layers
+	// send
 	err = gopacket.SerializeLayers(buf, opts, &eth, &ipv4, &udp, &dhcpV4)
 	if err != nil {
 		return fmt.Errorf("failed to serialize packet: %v", err)

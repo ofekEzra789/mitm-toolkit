@@ -26,9 +26,13 @@ func main() {
 	// offered ip
 	var offeredIP string
 
+	// count
+	var count int
+
 	flag.StringVar(&mode, "mode", "", "attack mode: arp or dhcp (required)")
 	flag.StringVar(&targetIP, "t", "", "target ip address (required)")
 	flag.StringVar(&offeredIP, "offer", "", "IP to offer target (required for dhcp)")
+	flag.IntVar(&count, "count", 0, "how DHCP Discover to send")
 	flag.Parse()
 
 	if mode == "" {
@@ -157,6 +161,28 @@ func main() {
 		sigChan := make(chan os.Signal, 1)
 		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 		<-sigChan
+
+	case "dhcp-starve":
+
+		if count <= 0 {
+			fmt.Println("Error: count is required and must be greater than 0")
+			fmt.Println("Usage: -count <number>")
+			os.Exit(1)
+		}
+
+		fmt.Println("Starting DHCP starvation attack")
+		fmt.Println()
+
+		// Get local network information
+		localNetwork, err := network.GetLocalNetworkInfo()
+		if err != nil {
+			fmt.Printf("Error: %v\n", err)
+			os.Exit(1)
+		}
+
+		dhcp.StartStarvation(localNetwork, count)
+
+		fmt.Printf("\nDone! Sent %v DHCP Discover packets\n", count)
 
 	default:
 		fmt.Println("Invalid mode")
