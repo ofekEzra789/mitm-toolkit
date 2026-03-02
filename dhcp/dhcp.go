@@ -2,12 +2,13 @@ package dhcp
 
 import (
 	"fmt"
-	"mitm-toolkit/network"
-	"net"
-
+	"github.com/fatih/color"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
+	"mitm-toolkit/network"
+	"net"
+	"time"
 )
 
 func ListenDHCP(iface network.NetworkInterface, offeredIP net.IP) error {
@@ -55,11 +56,19 @@ func ListenDHCP(iface network.NetworkInterface, offeredIP net.IP) error {
 					switch layers.DHCPMsgType(opt.Data[0]) {
 
 					case layers.DHCPMsgTypeDiscover:
+						// Discover
+						color.Yellow("%-10s  %-16s %v → broadcast\n", time.Now().Format("15:04:05"), "DHCP Discover", dhcp.ClientHWAddr)
+
 						// client looking for DHCP server - we send offer
+						color.Cyan("%-10s  %-16s %v → %v\n", time.Now().Format("15:04:05"), "DHCP Offer", dhcp.ClientHWAddr, offeredIP)
 						sendDHCPResponse(handle, iface, dhcp, layers.DHCPMsgTypeOffer, offeredIP)
 
 					case layers.DHCPMsgTypeRequest:
+						// Request
+						color.Yellow("%-10s  %-16s %v → broadcast\n", time.Now().Format("15:04:05"), "DHCP Request", dhcp.ClientHWAddr)
+
 						// client accept offer -> we send ack
+						color.Green("%-10s  %-16s %v → %v\n", time.Now().Format("15:04:05"), "DHCP ACK", dhcp.ClientHWAddr, offeredIP)
 						sendDHCPResponse(handle, iface, dhcp, layers.DHCPMsgTypeAck, offeredIP)
 
 					}
@@ -149,8 +158,8 @@ func sendDHCPResponse(handle *pcap.Handle, iface network.NetworkInterface, dhcp 
 				Length: 4,
 			},
 			layers.DHCPOption{
-				Type: layers.DHCPOptDNS,
-				Data: net.ParseIP("8.8.8.8").To4(),
+				Type:   layers.DHCPOptDNS,
+				Data:   net.ParseIP("8.8.8.8").To4(),
 				Length: 4,
 			},
 		},
