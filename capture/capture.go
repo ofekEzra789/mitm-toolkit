@@ -29,7 +29,7 @@ func StartCapture(networkIface network.NetworkInterface, targetIP string) error 
 	defer handle.Close()
 
 	// BPF filter - HTTP, DNS, From/to the target IP
-	filter := fmt.Sprintf("host %v and (port 80 or port 53)", targetIP)
+	filter := fmt.Sprintf("host %v and (port 80 or port 53) and not ether src %v", targetIP, networkIface.MacAddress)
 	err = handle.SetBPFFilter(filter)
 
 	if err != nil {

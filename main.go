@@ -151,6 +151,7 @@ func main() {
 		fmt.Println()
 
 		go dhcp.ListenDHCP(localNetwork, net.ParseIP(offeredIP))
+		go capture.StartCapture(localNetwork, offeredIP)
 
 		// Block until ctrl+c signal to exit
 		sigChan := make(chan os.Signal, 1)
