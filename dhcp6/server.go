@@ -2,13 +2,13 @@ package dhcp6
 
 import (
 	"fmt"
-	"net"
-	"time"
+	"github.com/fatih/color"
 	"github.com/insomniacslk/dhcp/dhcpv6"
 	"github.com/insomniacslk/dhcp/iana"
 	"golang.org/x/net/ipv6"
+	"net"
+	"time"
 )
-
 
 func ListenDHCPv6(ifaceName string, macAddr string, offeredIP net.IP) error {
 
@@ -59,11 +59,15 @@ func ListenDHCPv6(ifaceName string, macAddr string, offeredIP net.IP) error {
 
 		case dhcpv6.MessageTypeSolicit:
 			// Sending Advertise
+			color.Yellow("%-10s  %-16s\n", time.Now().Format("15:04:05"), "DHCPv6 Solicit")
 			sendDHCPv6Response(conn, addr, dhcp, dhcpv6.MessageTypeAdvertise, offeredIP, macAddr)
+			color.Cyan("%-10s  %-16s\n", time.Now().Format("15:04:05"), "DHCPv6 Advertise")
 
 		case dhcpv6.MessageTypeRequest:
 			//send Reply
+			color.Yellow("%-10s  %-16s\n", time.Now().Format("15:04:05"), "DHCPv6 Request")
 			sendDHCPv6Response(conn, addr, dhcp, dhcpv6.MessageTypeReply, offeredIP, macAddr)
+			color.Green("%-10s  %-16s\n", time.Now().Format("15:04:05"), "DHCPv6 Reply")
 		}
 	}
 
@@ -87,26 +91,25 @@ func sendDHCPv6Response(conn net.PacketConn, addr net.Addr, dhcp *dhcpv6.Message
 	ianaOpt := dhcp.GetOneOption(dhcpv6.OptionIANA)
 
 	if ianaOpt == nil {
-    	return
+		return
 	}
 
 	optIANA, ok := ianaOpt.(*dhcpv6.OptIANA)
-	
+
 	if !ok {
-    	return
+		return
 	}
 
 	mac, _ := net.ParseMAC(macAddr)
 	serverDUID := &dhcpv6.DUIDLLT{
-		HWType: iana.HWTypeEthernet,
+		HWType:        iana.HWTypeEthernet,
 		LinkLayerAddr: mac,
-		Time: 1,
-
+		Time:          1,
 	}
 
 	// building the response
 	resp := dhcpv6.Message{
-		MessageType: msgType,
+		MessageType:   msgType,
 		TransactionID: dhcp.TransactionID,
 	}
 
@@ -121,14 +124,14 @@ func sendDHCPv6Response(conn net.PacketConn, addr net.Addr, dhcp *dhcpv6.Message
 	// IA_NA
 	resp.AddOption(&dhcpv6.OptIANA{
 		IaId: optIANA.IaId,
-		T1: 3600 * time.Second,
-		T2: 7200 * time.Second,
+		T1:   3600 * time.Second,
+		T2:   7200 * time.Second,
 		Options: dhcpv6.IdentityOptions{
 			Options: dhcpv6.Options{
 				&dhcpv6.OptIAAddress{
-					IPv6Addr: offeredIP,
+					IPv6Addr:          offeredIP,
 					PreferredLifetime: 3600 * time.Second,
-					ValidLifetime: 7200 * time.Second,
+					ValidLifetime:     7200 * time.Second,
 				},
 			},
 		},

@@ -5,6 +5,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/fatih/color"
 	"golang.org/x/net/icmp"
 	"golang.org/x/net/ipv6"
 )
@@ -57,10 +58,13 @@ func SendRouterAdvertisement(ifaceName string, attackerLinkLocal string) error {
 	// send the RA repeatedly every few seconds
 	ticker := time.NewTicker(3 * time.Second)
 	for range ticker.C {
-		_,err := conn.WriteTo(msgBytes, dst)
+		_, err := conn.WriteTo(msgBytes, dst)
 
 		if err != nil {
 			fmt.Printf("WriteTo error: %v\n", err)
+		} else {
+			color.Green("%-10s  %-16s → ff02::1\n", time.Now().Format("15:04:05"), "Rogue RA sent")
+
 		}
 	}
 
