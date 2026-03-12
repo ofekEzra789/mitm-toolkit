@@ -15,6 +15,7 @@ type NetworkInterface struct {
 	InterfaceName string
 	IPv4Address   string
 	MacAddress    string
+	IPv6Address   string
 }
 
 // Step 1: Identify your network interface
@@ -41,6 +42,7 @@ func GetLocalNetworkInfo() (NetworkInterface, error) {
 		}
 
 		var ipv4 string
+		var ipv6 string
 
 		for _, addr := range addrs {
 			// Parse IP Address
@@ -53,8 +55,14 @@ func GetLocalNetworkInfo() (NetworkInterface, error) {
 			// Check if it's IPv4 (not IPv6)
 			if ipNet.IP.To4() != nil {
 				ipv4 = ipNet.IP.String()
-				break // Found IPv4, stop looking
+				
 			}
+
+			// check for IPv6
+			if ipNet.IP.To4() == nil && ipNet.IP.IsLinkLocalUnicast() {
+				ipv6 = ipNet.IP.String()
+			}
+
 		}
 
 		// Skip if no IPv4 found
@@ -70,6 +78,7 @@ func GetLocalNetworkInfo() (NetworkInterface, error) {
 			InterfaceName: iface.Name,
 			IPv4Address:   ipv4,
 			MacAddress:    macAddr,
+			IPv6Address: ipv6,
 		}, nil
 	}
 

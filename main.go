@@ -180,7 +180,18 @@ func main() {
 
 		sigCha := make(chan os.Signal, 1)
 		signal.Notify(sigCha, syscall.SIGINT, syscall.SIGTERM)
-		<- sigCha
+		<-sigCha
+
+	case "ra":
+		printAttackerInfo(localNetwork)
+		fmt.Println("\nStarting Rogue RA attack...")
+		fmt.Println("Press Ctrl+C to stop.")
+
+		go dhcp6.SendRouterAdvertisement(localNetwork.InterfaceName, localNetwork.IPv6Address)
+
+		sigChan := make(chan os.Signal, 1)
+		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+		<-sigChan
 
 	default:
 		fmt.Println("Invalid mode")
@@ -196,4 +207,5 @@ func printAttackerInfo(localNetwork network.NetworkInterface) {
 	fmt.Printf("  Interface: %s\n", localNetwork.InterfaceName)
 	fmt.Printf("  IP Address: %s\n", localNetwork.IPv4Address)
 	fmt.Printf("  MAC Address: %s\n", localNetwork.MacAddress)
+	fmt.Printf("  IPv6 Address: %s\n", localNetwork.IPv6Address)
 }
