@@ -9,12 +9,6 @@ import (
 	"golang.org/x/net/ipv6"
 )
 
-// What to do in this file //
-// 1. Joining multicast group ff02::1:2 on port 547 to receive Solicits -> DONE
-// 2. Listening for DHCPv6 packets from the victim -> DONE
-// 3. Handling Solicit → send Advertise with preference=255 and offered IP
-// 4. Handling Request → send Reply confirming the lease
-// 5. Building and sending responses — Ethernet + IPv6 + UDP + DHCPv6 layers with correct options (ClientID, ServerID, IA_NA, DNS)
 
 func ListenDHCPv6(ifaceName string, macAddr string, offeredIP net.IP) error {
 

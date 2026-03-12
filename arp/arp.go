@@ -82,6 +82,16 @@ func EnableIPForwarding() error {
 	return nil
 }
 
+// Enable ipv6 fowarding
+func EnableIPv6Forwarding() error {
+	err := os.WriteFile("/proc/sys/net/ipv6/conf/all/forwarding", []byte("1"), 0644)
+	if err != nil {
+		return fmt.Errorf("failed to enable IPv6 forwarding: %v", err)
+	}
+	return nil
+
+}
+
 // Starting the ARP spoofing
 // localNetwork => attacker
 func StartARPSpoofing(

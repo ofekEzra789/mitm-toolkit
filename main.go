@@ -184,6 +184,12 @@ func main() {
 
 	case "ra":
 		printAttackerInfo(localNetwork)
+
+		if err := arp.EnableIPv6Forwarding(); err != nil {
+			fmt.Printf("Error: %v\n", err)
+			os.Exit(1)
+		}
+
 		fmt.Println("\nStarting Rogue RA attack...")
 		fmt.Println("Press Ctrl+C to stop.")
 
