@@ -1,12 +1,15 @@
 # MITM Toolkit
 
-A Man-in-the-Middle toolkit written in Go for educational purposes. Supports multiple attack modes including ARP cache poisoning, DHCP starvation, and DHCP rogue server.
+A Man-in-the-Middle toolkit written in Go for educational purposes. Supports multiple attack modes including ARP cache poisoning, DHCP starvation, rogue DHCP server, and full IPv6 MITM (DHCPv6 + Rogue RA).
 
 ## Features
 
 - **ARP Spoofing** - Bidirectional ARP cache poisoning to intercept traffic
 - **DHCP Starvation** - Exhausts DHCP server IP pool by completing full DORA handshakes with random MACs
 - **DHCP Rogue Server** - Responds to DHCP Discover/Request with crafted Offer/ACK, sets attacker as default gateway
+- **DHCPv6 Rogue Server** - Responds to Solicit/Request with Advertise/Reply, preference 255 to win over legitimate server
+- **Rogue Router Advertisement** - Sends ICMPv6 RA to set attacker as IPv6 default gateway
+- **MITM6** - Combined DHCPv6 + Rogue RA for full IPv6 man-in-the-middle
 - Real-time HTTP traffic monitoring (requests & responses)
 - DNS query logging
 - Automatic ARP table restoration on exit
@@ -40,6 +43,24 @@ sudo ./mitm -mode dhcp -offer <ip_to_offer>
 
 > Make sure the target has `dhclient` installed (`apt install isc-dhcp-client`).
 
+### DHCPv6 Rogue Server
+
+```bash
+sudo ./mitm -mode dhcpv6 -offer <ipv6_to_offer>
+```
+
+### Rogue Router Advertisement
+
+```bash
+sudo ./mitm -mode ra
+```
+
+### MITM6 (DHCPv6 + Rogue RA)
+
+```bash
+sudo ./mitm -mode mitm6 -offer <ipv6_to_offer>
+```
+
 Press `Ctrl+C` to stop.
 
 ## Requirements
@@ -57,6 +78,8 @@ Press `Ctrl+C` to stop.
 | `arp/` | `arp.go` | ARP spoofing, IP forwarding, ARP table restoration |
 | `dhcp/` | `dhcp.go` | DHCP rogue server (listen, craft Offer/ACK packets) |
 | `dhcp/` | `starvation.go` | DHCP starvation (full DORA with random MACs) |
+| `dhcp6/` | `server.go` | DHCPv6 rogue server (Solicit→Advertise, Request→Reply) |
+| `dhcp6/` | `ra.go` | Rogue Router Advertisement (ICMPv6 type 134) |
 | `capture/` | `capture.go` | Packet capture, DNS monitoring |
 | `capture/` | `http.go` | HTTP request/response parsing |
 
