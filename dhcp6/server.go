@@ -137,6 +137,8 @@ func sendDHCPv6Response(conn net.PacketConn, addr net.Addr, dhcp *dhcpv6.Message
 		},
 	})
 
+	resp.AddOption(dhcpv6.OptDNS(net.ParseIP("2001:4860:4860::8888"))) // google DNS ipv6
+
 	// Preference option -> Most important (tell the victim to prefer the attacker)
 	resp.AddOption(&dhcpv6.OptionGeneric{
 		OptionCode: dhcpv6.OptionPreference,

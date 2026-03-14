@@ -29,7 +29,7 @@ func main() {
 	// count
 	var count int
 
-	flag.StringVar(&mode, "mode", "", "attack mode: arp, dhcp, dhcp6, dhcp-starve (required)")
+	flag.StringVar(&mode, "mode", "", "attack mode: arp, dhcp, dhcp6 (pool: 2001:db8::100 - 2001:db8::200), dhcp-starve (required)")
 	flag.StringVar(&targetIP, "t", "", "target ip address (required for arp)")
 	flag.StringVar(&offeredIP, "offer", "", "IP to offer target (required for dhcp)")
 	flag.IntVar(&count, "count", 0, "how many DHCP Discover to send (required for dhcpv4)")
