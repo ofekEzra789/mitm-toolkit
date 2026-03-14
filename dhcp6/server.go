@@ -71,8 +71,6 @@ func ListenDHCPv6(ifaceName string, macAddr string, offeredIP net.IP) error {
 		}
 	}
 
-	return nil
-
 }
 
 // Sending response (Advertise / Reply)
