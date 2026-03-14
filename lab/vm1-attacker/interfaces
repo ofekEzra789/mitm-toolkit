@@ -1,0 +1,6 @@
+# VM1 - Kali (Attacker)
+# Requirements: libpcap-dev
+#   sudo apt install libpcap-dev
+
+# Assign static IPv6 manually:
+sudo ip -6 addr add 2001:db8::10/64 dev eth0
